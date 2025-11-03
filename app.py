@@ -1,4 +1,3 @@
-# app.py
 import streamlit as st
 import pickle
 import pandas as pd
@@ -17,14 +16,18 @@ os.makedirs("artificats", exist_ok=True)
 # ----------------------------
 def download_file(url, local_path):
     if not os.path.exists(local_path):
-        r = requests.get(url)
-        with open(local_path, "wb") as f:
-            f.write(r.content)
+        print(f"Downloading {local_path}...")
+        response = requests.get(url)
+        if response.status_code == 200:
+            with open(local_path, "wb") as f:
+                f.write(response.content)
+            print(f"Downloaded {local_path}")
+        else:
+            print(f"Failed to download {local_path}: {response.status_code}")
 
-# Google Drive direct download URLs
+# ✅ Direct Google Drive links
 MOVIE_LIST_URL = "https://drive.google.com/uc?export=download&id=19y2krbrr0FvgXmz7_2LrILgr2AMR5S8E"
 SIMILARITY_URL = "https://drive.google.com/uc?export=download&id=1GjoJsDhAwnohT-mV8G7eUamYjcjTIwaR"
-
 
 download_file(MOVIE_LIST_URL, "artificats/movie_list.pkl")
 download_file(SIMILARITY_URL, "artificats/similarity.pkl")
@@ -62,7 +65,7 @@ def fetch_poster(movie_id):
 def recommend_movie(movie_title):
     movie_index = movies[movies['title'].str.lower() == movie_title.lower()].index[0]
     distances = similarity[movie_index]
-    movie_list = sorted(list(enumerate(distances)), reverse=True, key=lambda x: x[1])[1:6]  # ✅ Only 5 movies
+    movie_list = sorted(list(enumerate(distances)), reverse=True, key=lambda x: x[1])[1:6]
 
     recommended_movies = []
     recommended_posters = []
@@ -82,7 +85,7 @@ st.title("🎬 Movie Recommendation System")
 
 option = st.radio("Choose recommendation type:", ('By Movie', 'By Description'))
 
-# ✅ Movie-Based Search → 5 movies only
+# ✅ Movie-Based Search
 if option == 'By Movie':
     selected_movie = st.selectbox("Select a movie you like:", movies['title'].values)
 
@@ -96,7 +99,7 @@ if option == 'By Movie':
                 st.text(recommended_movies[i])
                 st.image(recommended_posters[i])
 
-# ✅ Description-Based Search → 10 movies (5 + 5)
+# ✅ Description-Based Search
 elif option == 'By Description':
     description = st.text_area("Describe the kind of movie you want to watch:")
 
