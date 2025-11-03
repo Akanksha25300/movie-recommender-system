@@ -1,5 +1,11 @@
-### dependency
+# Streamlit for the web app
 streamlit
 
-### local packages -
--e . 
+# Data handling
+pandas
+
+# Machine learning for TF-IDF and similarity
+scikit-learn
+
+# HTTP requests for fetching posters
+requests
