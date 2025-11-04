@@ -21,7 +21,7 @@ def download_file(url, local_path):
         response = session.get(url, stream=True)
         token = None
 
-        # Check for Google Drive confirmation token
+        # Handle Google Drive confirmation token
         for key, value in response.cookies.items():
             if key.startswith('download_warning'):
                 token = value
