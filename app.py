@@ -2,9 +2,9 @@ import streamlit as st
 import pickle
 import pandas as pd
 import requests
+import os
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-import os
 
 # ----------------------------
 # Ensure artificats folder exists
@@ -12,43 +12,55 @@ import os
 os.makedirs("artificats", exist_ok=True)
 
 # ----------------------------
-# Download large files if missing
+# Google Drive Download Fix
 # ----------------------------
-def download_file(url, local_path):
-    if not os.path.exists(local_path):
-        print(f"Downloading {local_path}...")
-        session = requests.Session()
-        response = session.get(url, stream=True)
-        token = None
+def download_file_from_google_drive(file_id, destination):
+    """Download a file from Google Drive handling confirmation tokens."""
+    URL = "https://docs.google.com/uc?export=download"
 
-        # Handle Google Drive confirmation token
-        for key, value in response.cookies.items():
-            if key.startswith('download_warning'):
-                token = value
-                break
+    session = requests.Session()
+    response = session.get(URL, params={'id': file_id}, stream=True)
+    token = None
 
-        if token:
-            params = {'confirm': token}
-            response = session.get(url, params=params, stream=True)
+    for key, value in response.cookies.items():
+        if key.startswith('download_warning'):
+            token = value
+            break
 
-        with open(local_path, "wb") as f:
-            for chunk in response.iter_content(32768):
-                if chunk:
-                    f.write(chunk)
-        print(f"Downloaded {local_path}")
+    if token:
+        params = {'id': file_id, 'confirm': token}
+        response = session.get(URL, params=params, stream=True)
 
-# ✅ Direct Google Drive links
-MOVIE_LIST_URL = "https://drive.google.com/uc?export=download&id=19y2krbrr0FvgXmz7_2LrILgr2AMR5S8E"
-SIMILARITY_URL = "https://drive.google.com/uc?export=download&id=1GjoJsDhAwnohT-mV8G7eUamYjcjTIwaR"
+    os.makedirs(os.path.dirname(destination), exist_ok=True)
 
-download_file(MOVIE_LIST_URL, "artificats/movie_list.pkl")
-download_file(SIMILARITY_URL, "artificats/similarity.pkl")
+    with open(destination, "wb") as f:
+        for chunk in response.iter_content(32768):
+            if chunk:
+                f.write(chunk)
+
+# ✅ Google Drive file IDs
+MOVIE_LIST_ID = "19y2krbrr0FvgXmz7_2LrILgr2AMR5S8E"
+SIMILARITY_ID = "1GjoJsDhAwnohT-mV8G7eUamYjcjTIwaR"
+
+# ----------------------------
+# Download files if missing
+# ----------------------------
+if not os.path.exists("artificats/movie_list.pkl"):
+    print("Downloading movie_list.pkl...")
+    download_file_from_google_drive(MOVIE_LIST_ID, "artificats/movie_list.pkl")
+
+if not os.path.exists("artificats/similarity.pkl"):
+    print("Downloading similarity.pkl...")
+    download_file_from_google_drive(SIMILARITY_ID, "artificats/similarity.pkl")
 
 # ----------------------------
 # Load pickled data
 # ----------------------------
-movies = pickle.load(open('artificats/movie_list.pkl', 'rb'))
-similarity = pickle.load(open('artificats/similarity.pkl', 'rb'))
+with open('artificats/movie_list.pkl', 'rb') as f:
+    movies = pickle.load(f)
+
+with open('artificats/similarity.pkl', 'rb') as f:
+    similarity = pickle.load(f)
 
 # Pre-calc TF-IDF for description based search
 tfidf = TfidfVectorizer(stop_words='english')
@@ -90,7 +102,7 @@ def recommend_movie(movie_title):
     return recommended_movies, recommended_posters
 
 # ----------------------------
-# UI
+# Streamlit UI
 # ----------------------------
 st.set_page_config(page_title="Movie Recommender", layout="wide")
 st.title("🎬 Movie Recommendation System")
