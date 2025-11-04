@@ -17,13 +17,25 @@ os.makedirs("artificats", exist_ok=True)
 def download_file(url, local_path):
     if not os.path.exists(local_path):
         print(f"Downloading {local_path}...")
-        response = requests.get(url)
-        if response.status_code == 200:
-            with open(local_path, "wb") as f:
-                f.write(response.content)
-            print(f"Downloaded {local_path}")
-        else:
-            print(f"Failed to download {local_path}: {response.status_code}")
+        session = requests.Session()
+        response = session.get(url, stream=True)
+        token = None
+
+        # Check for Google Drive confirmation token
+        for key, value in response.cookies.items():
+            if key.startswith('download_warning'):
+                token = value
+                break
+
+        if token:
+            params = {'confirm': token}
+            response = session.get(url, params=params, stream=True)
+
+        with open(local_path, "wb") as f:
+            for chunk in response.iter_content(32768):
+                if chunk:
+                    f.write(chunk)
+        print(f"Downloaded {local_path}")
 
 # ✅ Direct Google Drive links
 MOVIE_LIST_URL = "https://drive.google.com/uc?export=download&id=19y2krbrr0FvgXmz7_2LrILgr2AMR5S8E"
