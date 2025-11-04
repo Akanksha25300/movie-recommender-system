@@ -2,59 +2,11 @@ import streamlit as st
 import pickle
 import pandas as pd
 import requests
-import os
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 # ----------------------------
-# Ensure artificats folder exists
-# ----------------------------
-os.makedirs("artificats", exist_ok=True)
-
-# ----------------------------
-# Google Drive Download Fix
-# ----------------------------
-def download_file_from_google_drive(file_id, destination):
-    """Download a file from Google Drive handling confirmation tokens."""
-    URL = "https://docs.google.com/uc?export=download"
-
-    session = requests.Session()
-    response = session.get(URL, params={'id': file_id}, stream=True)
-    token = None
-
-    for key, value in response.cookies.items():
-        if key.startswith('download_warning'):
-            token = value
-            break
-
-    if token:
-        params = {'id': file_id, 'confirm': token}
-        response = session.get(URL, params=params, stream=True)
-
-    os.makedirs(os.path.dirname(destination), exist_ok=True)
-
-    with open(destination, "wb") as f:
-        for chunk in response.iter_content(32768):
-            if chunk:
-                f.write(chunk)
-
-# ✅ Google Drive file IDs
-MOVIE_LIST_ID = "19y2krbrr0FvgXmz7_2LrILgr2AMR5S8E"
-SIMILARITY_ID = "1GjoJsDhAwnohT-mV8G7eUamYjcjTIwaR"
-
-# ----------------------------
-# Download files if missing
-# ----------------------------
-if not os.path.exists("artificats/movie_list.pkl"):
-    print("Downloading movie_list.pkl...")
-    download_file_from_google_drive(MOVIE_LIST_ID, "artificats/movie_list.pkl")
-
-if not os.path.exists("artificats/similarity.pkl"):
-    print("Downloading similarity.pkl...")
-    download_file_from_google_drive(SIMILARITY_ID, "artificats/similarity.pkl")
-
-# ----------------------------
-# Load pickled data
+# Load pickled data from local artificats folder
 # ----------------------------
 with open('artificats/movie_list.pkl', 'rb') as f:
     movies = pickle.load(f)
